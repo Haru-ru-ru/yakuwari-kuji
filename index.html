@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>役員くじ</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#FFF8F0;--surface:#FFFFFF;--border:#E8DDD0;
+  --text:#2C1A0E;--muted:#8C7B6E;--accent:#C4522A;--accent-light:#F5E6DD;
+}
+body{font-family:'Zen Maru Gothic',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px 16px 48px}
+.wrap{max-width:440px;margin:0 auto}
+.header{text-align:center;margin-bottom:28px}
+.header .icon{font-size:52px;display:block;margin-bottom:8px}
+.header h1{font-size:22px;font-weight:700;letter-spacing:.05em}
+.header p{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px}
+.card-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px;text-transform:uppercase}
+input[type=text]{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
+input[type=text]:focus{border-color:var(--accent)}
+.name-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.name-num{width:28px;height:28px;border-radius:50%;background:var(--accent-light);color:var(--accent);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.roles-row{display:flex;flex-wrap:wrap;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:5px 13px;font-size:12px;font-weight:500;border:1px solid}
+.btn{display:block;width:100%;padding:14px;border-radius:12px;font-size:15px;font-weight:700;font-family:inherit;cursor:pointer;border:none;transition:transform .1s,opacity .1s;letter-spacing:.03em}
+.btn:active{transform:scale(.97)}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn:disabled{opacity:.35;cursor:default}
+.code-display{
+  text-align:center;background:var(--accent-light);border:2px dashed var(--accent);
+  border-radius:16px;padding:20px;margin-bottom:14px
+}
+.code-display .code{font-size:42px;font-weight:700;letter-spacing:.2em;color:var(--accent);display:block;margin:8px 0}
+.code-display p{font-size:13px;color:var(--muted);line-height:1.6}
+.code-input-row{display:flex;gap:8px;margin-bottom:10px}
+.code-input-row input{flex:1;text-align:center;font-size:22px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
+.name-btn{display:flex;align-items:center;gap:14px;width:100%;padding:16px;border-radius:14px;border:1px solid var(--border);background:var(--surface);font-family:inherit;cursor:pointer;margin-bottom:10px;transition:transform .1s,border-color .15s,background .15s;text-align:left}
+.name-btn:hover{background:var(--accent-light);border-color:var(--accent)}
+.name-btn:active{transform:scale(.97)}
+.name-btn:disabled{opacity:.35;cursor:default;pointer-events:none}
+.name-btn .dice{font-size:28px}
+.name-btn .lbl{font-size:16px;font-weight:700}
+.name-btn .sub{font-size:12px;color:var(--muted)}
+.result-reveal{border-radius:20px;padding:32px 20px;text-align:center;margin-bottom:16px;border:2px solid;animation:pop .45s cubic-bezier(.34,1.56,.64,1) forwards}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+.result-reveal .big-emoji{font-size:64px;display:block;margin-bottom:12px;animation:bounce .7s ease .5s infinite alternate}
+@keyframes bounce{from{transform:translateY(0)}to{transform:translateY(-8px)}}
+.result-reveal .who{font-size:14px;opacity:.75;margin-bottom:4px}
+.result-reveal .role-name{font-size:26px;font-weight:700}
+.all-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;margin-bottom:8px}
+.all-row .em{font-size:24px}
+.all-row .n{font-size:13px;opacity:.7}
+.all-row .r{font-size:15px;font-weight:700}
+.tab-row{display:flex;gap:8px;margin-bottom:20px}
+.tab{flex:1;padding:10px;border-radius:10px;border:1px solid var(--border);background:transparent;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;color:var(--muted);transition:background .12s,color .12s}
+.tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.screen{display:none}
+.screen.active{display:block}
+.hint{font-size:12px;color:var(--muted);text-align:center;line-height:1.7;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <span class="icon">🎰</span>
+    <h1>役員くじ</h1>
+  </div>
+
+  <!-- タブ -->
+  <div class="tab-row">
+    <button class="tab active" onclick="switchTab('host')">幹事（設定）</button>
+    <button class="tab" onclick="switchTab('player')">参加者（くじを引く）</button>
+  </div>
+
+  <!-- 幹事画面 -->
+  <div id="tab-host" class="screen active">
+    <div class="card">
+      <div class="card-label">参加者の名前（4人）</div>
+      <div class="name-row"><div class="name-num">1</div><input type="text" id="n0" placeholder="例：田中さん"></div>
+      <div class="name-row"><div class="name-num">2</div><input type="text" id="n1" placeholder="例：鈴木さん"></div>
+      <div class="name-row"><div class="name-num">3</div><input type="text" id="n2" placeholder="例：佐藤さん"></div>
+      <div class="name-row" style="margin-bottom:0"><div class="name-num">4</div><input type="text" id="n3" placeholder="例：山田さん"></div>
+    </div>
+    <div class="card">
+      <div class="card-label">今回の役職</div>
+      <div class="roles-row">
+        <span class="pill" style="background:#E1F5EE;color:#085041;border-color:#9FE1CB">📝 書記</span>
+        <span class="pill" style="background:#FAEEDA;color:#633806;border-color:#FAC775">💰 会計</span>
+        <span class="pill" style="background:#FAECE7;color:#4A1B0C;border-color:#F5C4B3">🎃 ハロウィン係</span>
+        <span class="pill" style="background:#EEEDFE;color:#26215C;border-color:#CECBF6">🎉 菅刈フェスティバル係</span>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="generateCode()">コードを発行する</button>
+    <div id="code-area" style="display:none;margin-top:16px">
+      <div class="code-display">
+        <p>このコードをLINEで全員に送ってね</p>
+        <span class="code" id="code-out"></span>
+        <p>全員が「参加者」タブを開いて<br>このコードと自分の名前を入力してくじを引けるよ！</p>
+      </div>
+      <button class="btn btn-secondary" onclick="copyCode()" id="copy-btn">コードをコピーする</button>
+    </div>
+  </div>
+
+  <!-- 参加者画面 -->
+  <div id="tab-player" class="screen">
+    <div id="step-code">
+      <div class="card">
+        <div class="card-label">幹事から届いたコードを入力</div>
+        <div class="code-input-row">
+          <input type="text" id="code-in" placeholder="例：ABC123" maxlength="8" oninput="this.value=this.value.toUpperCase()">
+        </div>
+        <button class="btn btn-primary" onclick="submitCode()">次へ</button>
+      </div>
+      <p class="hint">コードは幹事さんからLINEで届きます</p>
+    </div>
+
+    <div id="step-pick" style="display:none">
+      <p style="font-size:14px;color:var(--muted);margin-bottom:16px;text-align:center">自分の名前を選んでタップ！</p>
+      <div id="name-buttons"></div>
+      <div id="result-area"></div>
+      <div style="margin-top:8px">
+        <button class="btn btn-secondary" onclick="toggleAll()" id="show-all-btn">全員の結果を見る</button>
+      </div>
+      <div id="all-area" style="display:none;margin-top:12px"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ROLES=[
+  {label:'書記',     emoji:'📝',bg:'#E1F5EE',text:'#085041',border:'#1D9E75'},
+  {label:'会計',     emoji:'💰',bg:'#FAEEDA',text:'#633806',border:'#BA7517'},
+  {label:'ハロウィン係',emoji:'🎃',bg:'#FAECE7',text:'#4A1B0C',border:'#993C1D'},
+  {label:'菅刈フェスティバル係',emoji:'🎉',bg:'#EEEDFE',text:'#26215C',border:'#534AB7'},
+];
+
+function seededShuffle(arr,seed){
+  const a=[...arr];let s=seed>>>0;
+  function rng(){s=Math.imul(s,1664525)+1013904223>>>0;return s/0x100000000}
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+  return a;
+}
+function hashStr(str){
+  let h=2166136261>>>0;
+  for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
+  return h;
+}
+function strToSeed(s){return hashStr(s)>>>0}
+
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['host','player'][i]===tab));
+  document.getElementById('tab-host').classList.toggle('active',tab==='host');
+  document.getElementById('tab-player').classList.toggle('active',tab==='player');
+}
+
+let _names=[], _code='';
+
+function generateCode(){
+  const ns=[0,1,2,3].map(i=>{
+    const v=document.getElementById('n'+i).value.trim();
+    return v||['Aさん','Bさん','Cさん','Dさん'][i];
+  });
+  _names=ns;
+  const seed=Date.now()%0xFFFFFF;
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code='';
+  let s=seed;
+  for(let i=0;i<6;i++){s=Math.imul(s,1664525)+1013904223>>>0;code+=chars[s%chars.length];}
+  _code=code;
+  const payload=JSON.stringify({names:ns,code});
+  localStorage.setItem('kuji_'+code, payload);
+  document.getElementById('code-out').textContent=code;
+  document.getElementById('code-area').style.display='block';
+}
+
+function copyCode(){
+  navigator.clipboard.writeText(_code).then(()=>{
+    const b=document.getElementById('copy-btn');
+    b.textContent='コピーしました！';
+    setTimeout(()=>{b.textContent='コードをコピーする';},2000);
+  });
+}
+
+function submitCode(){
+  const code=document.getElementById('code-in').value.trim().toUpperCase();
+  if(!code){alert('コードを入力してください');return;}
+  const raw=localStorage.getItem('kuji_'+code);
+  if(!raw){
+    alert('コードが見つかりません。\n幹事さんに確認して、同じ端末かブラウザで試してみてね。');
+    return;
+  }
+  const data=JSON.parse(raw);
+  document.getElementById('step-code').style.display='none';
+  document.getElementById('step-pick').style.display='block';
+  buildPicker(data.names, strToSeed(data.code));
+}
+
+function buildPicker(names, seed){
+  const shuffledRoles=seededShuffle(ROLES,seed);
+  const shuffledNames=seededShuffle([...names],hashStr(seed.toString()));
+  const assignment={};
+  shuffledNames.forEach((n,i)=>{assignment[n]=shuffledRoles[i];});
+
+  const container=document.getElementById('name-buttons');
+  container.innerHTML='';
+  names.forEach(name=>{
+    const btn=document.createElement('button');
+    btn.className='name-btn';
+    btn.innerHTML=`<span class="dice">🎰</span><div><div class="lbl">${name}</div><div class="sub">タップしてくじを引く</div></div>`;
+    btn.onclick=()=>{
+      document.querySelectorAll('.name-btn').forEach(b=>b.disabled=true);
+      const role=assignment[name];
+      const res=document.getElementById('result-area');
+      res.innerHTML=`<div class="result-reveal" style="background:${role.bg};color:${role.text};border-color:${role.border}">
+        <span class="big-emoji">${role.emoji}</span>
+        <div class="who">${name}さんの役職は…</div>
+        <div class="role-name">${role.label}</div>
+      </div>`;
+    };
+    container.appendChild(btn);
+  });
+
+  const allHtml=`<div class="card"><div class="card-label">全員の役職</div>${
+    shuffledNames.map((n,i)=>{
+      const r=shuffledRoles[i];
+      return `<div class="all-row" style="background:${r.bg}">
+        <span class="em">${r.emoji}</span>
+        <div><div class="n" style="color:${r.text}">${n}</div><div class="r" style="color:${r.text}">${r.label}</div></div>
+      </div>`;
+    }).join('')
+  }</div>`;
+  document.getElementById('all-area')._html=allHtml;
+}
+
+let allVisible=false;
+function toggleAll(){
+  const area=document.getElementById('all-area');
+  const btn=document.getElementById('show-all-btn');
+  allVisible=!allVisible;
+  if(allVisible){area.style.display='block';area.innerHTML=area._html;btn.textContent='閉じる';}
+  else{area.style.display='none';btn.textContent='全員の結果を見る';}
+}
+</script>
+</body>
+</html>
