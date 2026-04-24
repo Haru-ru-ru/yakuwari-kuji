@@ -18,7 +18,7 @@ body{font-family:'Zen Maru Gothic',sans-serif;background:var(--bg);color:var(--t
 .header h1{font-size:22px;font-weight:700;letter-spacing:.05em}
 .header p{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.7}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:14px}
-.card-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px;text-transform:uppercase}
+.card-label{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.1em;margin-bottom:12px}
 input[type=text]{width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:15px;font-family:inherit;background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
 input[type=text]:focus{border-color:var(--accent)}
 .name-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
@@ -30,14 +30,9 @@ input[type=text]:focus{border-color:var(--accent)}
 .btn-primary{background:var(--accent);color:#fff}
 .btn-secondary{background:transparent;border:1px solid var(--border);color:var(--text)}
 .btn:disabled{opacity:.35;cursor:default}
-.code-display{
-  text-align:center;background:var(--accent-light);border:2px dashed var(--accent);
-  border-radius:16px;padding:20px;margin-bottom:14px
-}
-.code-display .code{font-size:42px;font-weight:700;letter-spacing:.2em;color:var(--accent);display:block;margin:8px 0}
-.code-display p{font-size:13px;color:var(--muted);line-height:1.6}
-.code-input-row{display:flex;gap:8px;margin-bottom:10px}
-.code-input-row input{flex:1;text-align:center;font-size:22px;font-weight:700;letter-spacing:.15em;text-transform:uppercase}
+.share-box{background:var(--accent-light);border:2px dashed var(--accent);border-radius:16px;padding:20px;margin-bottom:14px;text-align:center}
+.share-box p{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:12px}
+.share-url{font-size:11px;color:var(--text);word-break:break-all;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:12px;line-height:1.7;font-family:monospace;text-align:left}
 .name-btn{display:flex;align-items:center;gap:14px;width:100%;padding:16px;border-radius:14px;border:1px solid var(--border);background:var(--surface);font-family:inherit;cursor:pointer;margin-bottom:10px;transition:transform .1s,border-color .15s,background .15s;text-align:left}
 .name-btn:hover{background:var(--accent-light);border-color:var(--accent)}
 .name-btn:active{transform:scale(.97)}
@@ -72,7 +67,7 @@ input[type=text]:focus{border-color:var(--accent)}
   </div>
 
   <!-- タブ -->
-  <div class="tab-row">
+  <div class="tab-row" id="tab-row">
     <button class="tab active" onclick="switchTab('host')">幹事（設定）</button>
     <button class="tab" onclick="switchTab('player')">参加者（くじを引く）</button>
   </div>
@@ -95,31 +90,19 @@ input[type=text]:focus{border-color:var(--accent)}
         <span class="pill" style="background:#EEEDFE;color:#26215C;border-color:#CECBF6">🎉 菅刈フェスティバル係</span>
       </div>
     </div>
-    <button class="btn btn-primary" onclick="generateCode()">コードを発行する</button>
-    <div id="code-area" style="display:none;margin-top:16px">
-      <div class="code-display">
-        <p>このコードをLINEで全員に送ってね</p>
-        <span class="code" id="code-out"></span>
-        <p>全員が「参加者」タブを開いて<br>このコードと自分の名前を入力してくじを引けるよ！</p>
+    <button class="btn btn-primary" onclick="generateUrl()">LINEで送るURLを生成する</button>
+    <div id="share-area" style="display:none;margin-top:16px">
+      <div class="share-box">
+        <p>このURLをそのままLINEに貼って送るだけ！<br>全員が各自のスマホで開いてくじを引けるよ</p>
+        <div class="share-url" id="share-url-text"></div>
+        <button class="btn btn-primary" onclick="copyUrl()" id="copy-btn">URLをコピーする</button>
       </div>
-      <button class="btn btn-secondary" onclick="copyCode()" id="copy-btn">コードをコピーする</button>
     </div>
   </div>
 
   <!-- 参加者画面 -->
   <div id="tab-player" class="screen">
-    <div id="step-code">
-      <div class="card">
-        <div class="card-label">幹事から届いたコードを入力</div>
-        <div class="code-input-row">
-          <input type="text" id="code-in" placeholder="例：ABC123" maxlength="8" oninput="this.value=this.value.toUpperCase()">
-        </div>
-        <button class="btn btn-primary" onclick="submitCode()">次へ</button>
-      </div>
-      <p class="hint">コードは幹事さんからLINEで届きます</p>
-    </div>
-
-    <div id="step-pick" style="display:none">
+    <div id="step-pick">
       <p style="font-size:14px;color:var(--muted);margin-bottom:16px;text-align:center">自分の名前を選んでタップ！</p>
       <div id="name-buttons"></div>
       <div id="result-area"></div>
@@ -134,9 +117,9 @@ input[type=text]:focus{border-color:var(--accent)}
 
 <script>
 const ROLES=[
-  {label:'書記',     emoji:'📝',bg:'#E1F5EE',text:'#085041',border:'#1D9E75'},
-  {label:'会計',     emoji:'💰',bg:'#FAEEDA',text:'#633806',border:'#BA7517'},
-  {label:'ハロウィン係',emoji:'🎃',bg:'#FAECE7',text:'#4A1B0C',border:'#993C1D'},
+  {label:'書記',           emoji:'📝',bg:'#E1F5EE',text:'#085041',border:'#1D9E75'},
+  {label:'会計',           emoji:'💰',bg:'#FAEEDA',text:'#633806',border:'#BA7517'},
+  {label:'ハロウィン係',      emoji:'🎃',bg:'#FAECE7',text:'#4A1B0C',border:'#993C1D'},
   {label:'菅刈フェスティバル係',emoji:'🎉',bg:'#EEEDFE',text:'#26215C',border:'#534AB7'},
 ];
 
@@ -151,7 +134,6 @@ function hashStr(str){
   for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}
   return h;
 }
-function strToSeed(s){return hashStr(s)>>>0}
 
 function switchTab(tab){
   document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['host','player'][i]===tab));
@@ -159,49 +141,49 @@ function switchTab(tab){
   document.getElementById('tab-player').classList.toggle('active',tab==='player');
 }
 
-let _names=[], _code='';
-
-function generateCode(){
+function generateUrl(){
   const ns=[0,1,2,3].map(i=>{
     const v=document.getElementById('n'+i).value.trim();
     return v||['Aさん','Bさん','Cさん','Dさん'][i];
   });
-  _names=ns;
-  const seed=Date.now()%0xFFFFFF;
-  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let code='';
-  let s=seed;
-  for(let i=0;i<6;i++){s=Math.imul(s,1664525)+1013904223>>>0;code+=chars[s%chars.length];}
-  _code=code;
-  const payload=JSON.stringify({names:ns,code});
-  localStorage.setItem('kuji_'+code, payload);
-  document.getElementById('code-out').textContent=code;
-  document.getElementById('code-area').style.display='block';
+  const seed=(Date.now()%0xFFFFFF).toString(36);
+  const encoded=ns.map(n=>encodeURIComponent(n)).join(',');
+  const url=location.href.split('?')[0].split('#')[0]+'?n='+encoded+'&s='+seed;
+  document.getElementById('share-url-text').textContent=url;
+  document.getElementById('share-area').style.display='block';
+  document.getElementById('copy-btn')._url=url;
 }
 
-function copyCode(){
-  navigator.clipboard.writeText(_code).then(()=>{
+function copyUrl(){
+  const url=document.getElementById('share-url-text').textContent;
+  navigator.clipboard.writeText(url).then(()=>{
     const b=document.getElementById('copy-btn');
     b.textContent='コピーしました！';
-    setTimeout(()=>{b.textContent='コードをコピーする';},2000);
+    setTimeout(()=>{b.textContent='URLをコピーする';},2000);
   });
 }
 
-function submitCode(){
-  const code=document.getElementById('code-in').value.trim().toUpperCase();
-  if(!code){alert('コードを入力してください');return;}
-  const raw=localStorage.getItem('kuji_'+code);
-  if(!raw){
-    alert('コードが見つかりません。\n幹事さんに確認して、同じ端末かブラウザで試してみてね。');
-    return;
-  }
-  const data=JSON.parse(raw);
-  document.getElementById('step-code').style.display='none';
-  document.getElementById('step-pick').style.display='block';
-  buildPicker(data.names, strToSeed(data.code));
+function getParams(){
+  try{
+    const p=new URLSearchParams(location.search);
+    const n=p.get('n'),s=p.get('s');
+    if(!n||!s)return null;
+    const names=n.split(',').map(x=>decodeURIComponent(x)).filter(Boolean);
+    if(names.length!==4)return null;
+    return{names,seed:parseInt(s,36)};
+  }catch{return null;}
 }
 
-function buildPicker(names, seed){
+const params=getParams();
+if(params){
+  // 参加者モード：URLにパラメータがある
+  document.getElementById('tab-row').style.display='none';
+  document.getElementById('tab-host').classList.remove('active');
+  document.getElementById('tab-player').classList.add('active');
+  buildPicker(params.names, params.seed);
+}
+
+function buildPicker(names,seed){
   const shuffledRoles=seededShuffle(ROLES,seed);
   const shuffledNames=seededShuffle([...names],hashStr(seed.toString()));
   const assignment={};
@@ -226,7 +208,7 @@ function buildPicker(names, seed){
     container.appendChild(btn);
   });
 
-  const allHtml=`<div class="card"><div class="card-label">全員の役職</div>${
+  document.getElementById('all-area')._html=`<div class="card"><div class="card-label">全員の役職</div>${
     shuffledNames.map((n,i)=>{
       const r=shuffledRoles[i];
       return `<div class="all-row" style="background:${r.bg}">
@@ -235,7 +217,6 @@ function buildPicker(names, seed){
       </div>`;
     }).join('')
   }</div>`;
-  document.getElementById('all-area')._html=allHtml;
 }
 
 let allVisible=false;
